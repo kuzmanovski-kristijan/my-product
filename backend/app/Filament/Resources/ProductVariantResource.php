@@ -80,7 +80,8 @@ class ProductVariantResource extends Resource
                     ->formatStateUsing(fn ($state) => number_format((int) round($state / 100), 0, '.', ',') . ' ден')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('sale_price_cents')
-                    ->numeric()
+                    ->label('Попуст цена')
+                    ->formatStateUsing(fn ($state) => $state ? number_format((int) round($state / 100), 0, '.', ',') . ' ден' : null)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('stock_qty')
                     ->numeric()
