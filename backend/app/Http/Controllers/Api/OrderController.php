@@ -148,6 +148,7 @@ class OrderController extends Controller
             $cart->items()->delete();
 
             $order->load(['items', 'address']);
+            \App\Jobs\SendOrderCreatedEmailJob::dispatch($order->id);
 
             return response()->json(['data' => $order], 201);
         });

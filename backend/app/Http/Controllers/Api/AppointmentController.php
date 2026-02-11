@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use App\Models\Store;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AppointmentController extends Controller
 {
@@ -67,6 +68,12 @@ class AppointmentController extends Controller
      */
     public function book(Request $request)
     {
+        $user = $request->user() ?? $request->user('sanctum');
+        if (! $user && $request->bearerToken()) {
+            $token = PersonalAccessToken::findToken($request->bearerToken());
+            $user = $token?->tokenable;
+        }
+
         $validated = $request->validate([
             'store_id' => ['required', 'integer', 'exists:stores,id'],
             'starts_at' => ['required', 'date'],
@@ -99,17 +106,31 @@ class AppointmentController extends Controller
             return response()->json(['message' => 'Терминот е веќе зафатен.'], 422);
         }
 
-        $appointment = Appointment::query()->create([
-            'store_id' => $store->id,
-            'user_id' => $request->user()?->id,
-            'starts_at' => $starts,
-            'ends_at' => $ends,
-            'full_name' => $validated['full_name'],
-            'phone' => $validated['phone'],
-            'email' => $validated['email'] ?? null,
-            'note' => $validated['note'] ?? null,
-            'status' => 'booked',
-        ]);
+        try {
+            $appointment = Appointment::query()->create([
+                'store_id' => $store->id,
+                'user_id' => $user?->id,
+                'starts_at' => $starts,
+                'ends_at' => $ends,
+                'full_name' => $validated['full_name'],
+                'phone' => $validated['phone'],
+                'email' => $validated['email'] ?? null,
+                'note' => $validated['note'] ?? null,
+                'status' => 'booked',
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json(['message' => 'Терминот е веќе зафатен.'], 422);
+        }
+
+        \App\Jobs\SendAppointmentBookedEmailJob::dispatch($appointment->id);
+        if ($appointment->user_id) {
+            \App\Jobs\SendPushToUserJob::dispatch(
+                $appointment->user_id,
+                'Закажан термин',
+                "Термин: {$appointment->starts_at->format('Y-m-d H:i')}",
+                ['appointment_id' => $appointment->id]
+            );
+        }
 
         return response()->json(['data' => $appointment], 201);
     }

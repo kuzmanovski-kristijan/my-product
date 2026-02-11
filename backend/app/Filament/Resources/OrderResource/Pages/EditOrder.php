@@ -52,6 +52,15 @@ class EditOrder extends EditRecord
                         'note' => $data['note'] ?? null,
                     ]);
 
+                    if ($order->user_id) {
+                        \App\Jobs\SendPushToUserJob::dispatch(
+                            $order->user_id,
+                            'Статус на нарачка',
+                            "Нарачката {$order->order_number} е: {$to}",
+                            ['order_number' => $order->order_number, 'status' => $to]
+                        );
+                    }
+
                     Notification::make()->title("Status changed: {$from} → {$to}")->success()->send();
                 }),
             Actions\DeleteAction::make(),
