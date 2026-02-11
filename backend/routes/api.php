@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\OrderController;
@@ -14,6 +15,8 @@ Route::get('/ping', fn () => response()->json(['ok' => true]));
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
+Route::get('/appointments/slots', [AppointmentController::class, 'slots']);
+Route::post('/appointments', [AppointmentController::class, 'book']);
 Route::get('/cart', [CartController::class, 'show']);
 Route::post('/cart/items', [CartController::class, 'addItem']);
 Route::patch('/cart/items/{cartItem}', [CartController::class, 'updateItem']);
