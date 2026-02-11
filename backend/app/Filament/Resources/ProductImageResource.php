@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductImageResource\Pages;
 use App\Filament\Resources\ProductImageResource\RelationManagers;
+use App\Models\Product;
 use App\Models\ProductImage;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -23,17 +24,26 @@ class ProductImageResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('product_id')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('path')
+                Forms\Components\Select::make('product_id')
+                    ->label('Product')
+                    ->options(fn () => Product::query()->orderBy('name')->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
                     ->required(),
-                Forms\Components\TextInput::make('alt'),
+
+                Forms\Components\FileUpload::make('path')
+                    ->label('Image')
+                    ->image()
+                    ->directory('products')
+                    ->imageEditor()
+                    ->required(),
+
+                Forms\Components\TextInput::make('alt')->maxLength(255)->nullable(),
+
                 Forms\Components\TextInput::make('sort_order')
-                    ->required()
                     ->numeric()
                     ->default(0),
-            ]);
+            ])->columns(2);
     }
 
     public static function table(Table $table): Table

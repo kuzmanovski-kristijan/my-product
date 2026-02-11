@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductVariantResource\Pages;
 use App\Filament\Resources\ProductVariantResource\RelationManagers;
+use App\Models\Product;
 use App\Models\ProductVariant;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -23,30 +24,33 @@ class ProductVariantResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('product_id')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('sku')
-                    ->label('SKU')
+                Forms\Components\Select::make('product_id')
+                    ->label('Product')
+                    ->options(fn () => Product::query()->orderBy('name')->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
                     ->required(),
-                Forms\Components\TextInput::make('name'),
-                Forms\Components\TextInput::make('color'),
-                Forms\Components\TextInput::make('material'),
-                Forms\Components\TextInput::make('dimensions'),
+                Forms\Components\TextInput::make('sku')
+                    ->required()
+                    ->unique(ignoreRecord: true),
+                Forms\Components\TextInput::make('name')->maxLength(255)->nullable(),
+                Forms\Components\TextInput::make('color')->maxLength(255)->nullable(),
+                Forms\Components\TextInput::make('material')->maxLength(255)->nullable(),
+                Forms\Components\TextInput::make('dimensions')->maxLength(255)->nullable(),
                 Forms\Components\TextInput::make('price_cents')
-                    ->required()
-                    ->numeric(),
+                    ->label('Price (cents)')
+                    ->numeric()
+                    ->required(),
                 Forms\Components\TextInput::make('sale_price_cents')
-                    ->numeric(),
+                    ->label('Sale price (cents)')
+                    ->numeric()
+                    ->nullable(),
                 Forms\Components\TextInput::make('stock_qty')
-                    ->required()
                     ->numeric()
                     ->default(0),
-                Forms\Components\Toggle::make('track_stock')
-                    ->required(),
-                Forms\Components\Toggle::make('is_active')
-                    ->required(),
-            ]);
+                Forms\Components\Toggle::make('track_stock')->default(true),
+                Forms\Components\Toggle::make('is_active')->default(true),
+            ])->columns(2);
     }
 
     public static function table(Table $table): Table

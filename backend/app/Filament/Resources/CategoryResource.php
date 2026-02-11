@@ -7,6 +7,7 @@ use App\Filament\Resources\CategoryResource\RelationManagers;
 use App\Models\Category;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Illuminate\Support\Str;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -23,16 +24,24 @@ class CategoryResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('parent_id')
-                    ->numeric(),
+                Forms\Components\Select::make('parent_id')
+                    ->label('Parent category')
+                    ->options(fn () => Category::query()->orderBy('name')->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->nullable(),
                 Forms\Components\TextInput::make('name')
-                    ->required(),
-                Forms\Components\TextInput::make('slug')
-                    ->required(),
-                Forms\Components\Toggle::make('is_active')
-                    ->required(),
-                Forms\Components\TextInput::make('sort_order')
                     ->required()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        $set('slug', Str::slug($state));
+                    }),
+                Forms\Components\TextInput::make('slug')
+                    ->required()
+                    ->unique(ignoreRecord: true),
+                Forms\Components\Toggle::make('is_active')
+                    ->default(true),
+                Forms\Components\TextInput::make('sort_order')
                     ->numeric()
                     ->default(0),
             ]);
