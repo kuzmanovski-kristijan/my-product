@@ -38,13 +38,17 @@ class ProductVariantResource extends Resource
                 Forms\Components\TextInput::make('material')->maxLength(255)->nullable(),
                 Forms\Components\TextInput::make('dimensions')->maxLength(255)->nullable(),
                 Forms\Components\TextInput::make('price_cents')
-                    ->label('Price (cents)')
+                    ->label('Цена (денари)')
                     ->numeric()
-                    ->required(),
+                    ->required()
+                    ->formatStateUsing(fn ($state) => $state !== null ? (int) round($state / 100) : null)
+                    ->dehydrateStateUsing(fn ($state) => $state !== null ? ((int) $state) * 100 : null),
                 Forms\Components\TextInput::make('sale_price_cents')
-                    ->label('Sale price (cents)')
+                    ->label('Попуст цена (денари)')
                     ->numeric()
-                    ->nullable(),
+                    ->nullable()
+                    ->formatStateUsing(fn ($state) => $state !== null ? (int) round($state / 100) : null)
+                    ->dehydrateStateUsing(fn ($state) => $state !== null ? ((int) $state) * 100 : null),
                 Forms\Components\TextInput::make('stock_qty')
                     ->numeric()
                     ->default(0),
@@ -72,7 +76,8 @@ class ProductVariantResource extends Resource
                 Tables\Columns\TextColumn::make('dimensions')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('price_cents')
-                    ->numeric()
+                    ->label('Цена')
+                    ->formatStateUsing(fn ($state) => number_format((int) round($state / 100), 0, '.', ',') . ' ден')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('sale_price_cents')
                     ->numeric()

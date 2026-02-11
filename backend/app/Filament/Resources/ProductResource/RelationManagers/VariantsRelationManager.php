@@ -27,14 +27,18 @@ class VariantsRelationManager extends RelationManager
             \Filament\Forms\Components\TextInput::make('dimensions')->maxLength(255)->nullable(),
 
             \Filament\Forms\Components\TextInput::make('price_cents')
-                ->label('Price (cents)')
+                ->label('Цена (денари)')
                 ->numeric()
-                ->required(),
+                ->required()
+                ->formatStateUsing(fn ($state) => $state !== null ? (int) round($state / 100) : null)
+                ->dehydrateStateUsing(fn ($state) => $state !== null ? ((int) $state) * 100 : null),
 
             \Filament\Forms\Components\TextInput::make('sale_price_cents')
-                ->label('Sale price (cents)')
+                ->label('Попуст цена (денари)')
                 ->numeric()
-                ->nullable(),
+                ->nullable()
+                ->formatStateUsing(fn ($state) => $state !== null ? (int) round($state / 100) : null)
+                ->dehydrateStateUsing(fn ($state) => $state !== null ? ((int) $state) * 100 : null),
 
             \Filament\Forms\Components\TextInput::make('stock_qty')
                 ->numeric()
@@ -51,7 +55,10 @@ class VariantsRelationManager extends RelationManager
             ->columns([
                 \Filament\Tables\Columns\TextColumn::make('sku')->searchable(),
                 \Filament\Tables\Columns\TextColumn::make('name')->searchable(),
-                \Filament\Tables\Columns\TextColumn::make('price_cents')->label('Price')->sortable(),
+                \Filament\Tables\Columns\TextColumn::make('price_cents')
+                    ->label('Цена')
+                    ->formatStateUsing(fn ($state) => number_format((int) round($state / 100), 0, '.', ',') . ' ден')
+                    ->sortable(),
                 \Filament\Tables\Columns\TextColumn::make('stock_qty')->sortable(),
                 \Filament\Tables\Columns\IconColumn::make('is_active')->boolean(),
             ])
