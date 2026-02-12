@@ -52,6 +52,12 @@ class EditOrder extends EditRecord
                         'note' => $data['note'] ?? null,
                     ]);
 
+                    \App\Jobs\SendOrderStatusChangedEmailJob::dispatch(
+                        $order->id,
+                        $from,
+                        $to
+                    );
+
                     if ($order->user_id) {
                         \App\Jobs\SendPushToUserJob::dispatch(
                             $order->user_id,

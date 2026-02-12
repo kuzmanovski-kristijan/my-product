@@ -7,7 +7,6 @@ use App\Models\Appointment;
 use App\Models\Store;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class AppointmentController extends Controller
 {
@@ -68,12 +67,6 @@ class AppointmentController extends Controller
      */
     public function book(Request $request)
     {
-        $user = $request->user() ?? $request->user('sanctum');
-        if (! $user && $request->bearerToken()) {
-            $token = PersonalAccessToken::findToken($request->bearerToken());
-            $user = $token?->tokenable;
-        }
-
         $validated = $request->validate([
             'store_id' => ['required', 'integer', 'exists:stores,id'],
             'starts_at' => ['required', 'date'],
@@ -109,7 +102,7 @@ class AppointmentController extends Controller
         try {
             $appointment = Appointment::query()->create([
                 'store_id' => $store->id,
-                'user_id' => $user?->id,
+                'user_id' => $request->user()?->id,
                 'starts_at' => $starts,
                 'ends_at' => $ends,
                 'full_name' => $validated['full_name'],

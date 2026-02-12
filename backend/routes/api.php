@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\PushTestController;
+use App\Http\Controllers\Api\StripeWebhookController;
 use App\Models\CartItem;
 use Illuminate\Support\Facades\Route;
 
@@ -17,12 +19,14 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 Route::get('/appointments/slots', [AppointmentController::class, 'slots']);
-Route::post('/appointments', [AppointmentController::class, 'book']);
+Route::post('/appointments', [AppointmentController::class, 'book'])
+    ->middleware('optional.sanctum');
 Route::get('/cart', [CartController::class, 'show']);
 Route::post('/cart/items', [CartController::class, 'addItem']);
 Route::patch('/cart/items/{cartItem}', [CartController::class, 'updateItem']);
 Route::delete('/cart/items/{cartItem}', [CartController::class, 'removeItem']);
 Route::post('/orders', [OrderController::class, 'store']);
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle']);
 
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
@@ -36,4 +40,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
     Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
+    Route::post('/push/test', [PushTestController::class, 'send']);
 });

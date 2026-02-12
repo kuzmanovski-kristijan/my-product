@@ -12,12 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Important for Sanctum (SPA/cookie auth). Token auth works regardless,
-        // but this is the correct default for modern Laravel API setups.
         $middleware->statefulApi();
+
+        $middleware->alias([
+            'optional.sanctum' => \App\Http\Middleware\OptionalSanctumAuth::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })
     ->create();
-

@@ -9,9 +9,13 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Models\ProductVariant;
+use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Stripe\Exception\ApiConnectionException;
+use Stripe\Exception\ApiErrorException;
+use Stripe\Exception\AuthenticationException;
 
 class OrderController extends Controller
 {
@@ -53,7 +57,7 @@ class OrderController extends Controller
         $cart = $this->getCartOrFail($request);
         $user = $request->user();
 
-        return DB::transaction(function () use ($validated, $cart, $user) {
+        $orderId = DB::transaction(function () use ($validated, $cart, $user) {
             // Re-load variants FOR UPDATE to avoid race conditions
             $variantIds = $cart->items->pluck('product_variant_id')->all();
 
@@ -147,11 +151,43 @@ class OrderController extends Controller
             // Clear cart
             $cart->items()->delete();
 
-            $order->load(['items', 'address']);
-            \App\Jobs\SendOrderCreatedEmailJob::dispatch($order->id);
-
-            return response()->json(['data' => $order], 201);
+            return $order->id;
         });
+
+        $order = Order::query()->with(['items', 'address', 'user'])->findOrFail($orderId);
+
+        $clientSecret = null;
+
+        if ($order->payment_method === 'stripe') {
+            try {
+                $pi = app(StripeService::class)->createOrGetPaymentIntent($order);
+                $clientSecret = $pi['client_secret'];
+            } catch (ApiConnectionException $e) {
+                return response()->json([
+                    'message' => 'Payment provider unavailable. Please try again.',
+                ], 503);
+            } catch (AuthenticationException $e) {
+                return response()->json([
+                    'message' => 'Stripe credentials are invalid.',
+                ], 500);
+            } catch (ApiErrorException $e) {
+                return response()->json([
+                    'message' => 'Stripe error: ' . $e->getMessage(),
+                ], 422);
+            }
+        }
+
+        $order->refresh()->load(['items', 'address']);
+        \App\Jobs\SendOrderCreatedEmailJob::dispatch($order->id);
+
+        return response()->json([
+            'data' => $order,
+            'stripe' => $clientSecret ? [
+                'client_secret' => $clientSecret,
+                'payment_intent_id' => $order->stripe_payment_intent_id,
+                'publishable_key' => config('services.stripe.publishable'),
+            ] : null,
+        ], 201);
     }
 
     public function index(Request $request)

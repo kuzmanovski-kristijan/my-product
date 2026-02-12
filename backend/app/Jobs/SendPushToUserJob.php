@@ -14,6 +14,7 @@ class SendPushToUserJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 30;
+    public int $tries = 5;
 
     public function __construct(
         public int $userId,
@@ -25,5 +26,10 @@ class SendPushToUserJob implements ShouldQueue
     public function handle(PushNotificationService $push): void
     {
         $push->sendToUser($this->userId, $this->title, $this->body, $this->data);
+    }
+
+    public function backoff(): array
+    {
+        return [10, 30, 60, 120, 300];
     }
 }
